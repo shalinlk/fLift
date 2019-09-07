@@ -25,14 +25,14 @@ func NewTCPClient(serverHost string) TCPClient {
 }
 
 func (c TCPClient) Register() {
-	c.socket.Write([]byte(utils.FillUpForCommad("REGISTER")))
+	_, _ = c.socket.Write([]byte(utils.FillUpForCommad("REGISTER")))
 	clientIdBuffer := make([]byte, 60)
-	c.socket.Read(clientIdBuffer)
+	_, _ = c.socket.Read(clientIdBuffer)
 	c.clientId = strings.Trim(string(clientIdBuffer), ":")
 }
 
 func (c TCPClient) Start(consumer chan<- file.FileContent) {
-	c.socket.Write([]byte(utils.FillUpForCommad("START")))
+	_, _ = c.socket.Write([]byte(utils.FillUpForCommad("START")))
 	c.readAndParse(consumer)
 }
 
@@ -69,5 +69,5 @@ func (c TCPClient) handleError(err error) {
 }
 
 func (c TCPClient) Disconnect() {
-	c.socket.Close()
+	_ = c.socket.Close()
 }
