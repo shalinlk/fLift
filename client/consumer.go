@@ -13,12 +13,12 @@ func connectionFactory(connType, host string) (Client, error) {
 	}
 	return nil, errors.New("connection type not defined")
 }
-func StartConsumer(host, writeFilePath, connType string, writeBufferSize int) {
+func StartConsumer(host, writeFilePath, connType string, writeBufferSize int, agentCount int) {
 	socket, err := connectionFactory(connType, host)
 	checkAndPanicOnError(err)
 	consumerChannel := make(chan FileContent, writeBufferSize)
-	writer := NewWriter(writeFilePath, consumerChannel)
-	go writer.ConsumeAndWrite()
+	writer := NewWriter(writeFilePath, consumerChannel, agentCount)
+	writer.StartWriters()
 	socket.Start(consumerChannel)
 }
 

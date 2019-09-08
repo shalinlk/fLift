@@ -27,7 +27,7 @@ func main() {
 	config := utils.ReadConfig(*env)
 
 	if *mode == ModeConsumer {
-		client.StartConsumer(config.Host, config.WriteFilePath, config.ConnectionType, config.WriteBufferSize)
+		client.StartConsumer(config.Host, config.WriteFilePath, config.ConnectionType, config.WriteBufferSize, config.WriterCount)
 	} else if *mode == ModeProducer {
 		reader := NewReader(config.ReadFilePath, config.ReadBufferSize)
 		server := NewServer(config.Port, reader)
