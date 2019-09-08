@@ -25,14 +25,14 @@ func NewTCPClient(serverHost string) TCPClient {
 }
 
 func (c TCPClient) Register() {
-	_, _ = c.socket.Write([]byte(utils.FillUpForCommad("REGISTER")))
+	_, _ = c.socket.Write([]byte(utils.FillUpForCommand("REGISTER")))
 	clientIdBuffer := make([]byte, 60)
 	_, _ = c.socket.Read(clientIdBuffer)
 	c.clientId = strings.Trim(string(clientIdBuffer), ":")
 }
 
 func (c TCPClient) Start(consumer chan<- file.FileContent) {
-	_, _ = c.socket.Write([]byte(utils.FillUpForCommad("START")))
+	//_, _ = c.socket.Write([]byte(utils.FillUpForCommand("START")))
 	c.readAndParse(consumer)
 }
 
@@ -47,7 +47,7 @@ func (c TCPClient) readAndParse(consumer chan<- file.FileContent) {
 		c.handleError(fSizeError)
 
 		fileName := strings.Trim(string(bufferFileName), utils.Filler)
-		fileSize, convErr := strconv.ParseInt(strings.Trim(string(bufferFileSize), utils.Filler), 10, 64)
+		fileSize, convErr := strconv.Atoi(strings.Trim(string(bufferFileSize), utils.Filler))
 		c.handleError(convErr)
 
 		fileBuffer := make([]byte, fileSize)

@@ -1,0 +1,9 @@
+{
+  "host": "localhost:8090",
+  "connection_type": "tcp",
+  "write_buffer_size": 1000,
+  "write_file_path": "/Users/shalinlk/Projects/BigO/target/",
+  "port": 8090,
+  "read_buffer_size": 1000,
+  "read_file_path": "/Users/shalinlk/Projects/BigO/source/sampleData3Sept2019/"
+}
