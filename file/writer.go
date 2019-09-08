@@ -54,7 +54,7 @@ func (w *Writer) WriteToFile(content FileContent) {
 func (w Writer) tracker() {
 	count := 0
 	second := 0
-	ticker := NewTicker(Second)
+	ticker := NewTicker(Second * 1)
 	for {
 		select {
 		case <- w.counterChan :

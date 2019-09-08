@@ -5,6 +5,7 @@ import (
 	"fmt"
 	. "github.com/shalinlk/fLift/file"
 	. "github.com/shalinlk/fLift/server"
+	"runtime"
 
 	"github.com/shalinlk/fLift/client"
 	"github.com/shalinlk/fLift/utils"
@@ -27,6 +28,7 @@ func main() {
 	config := utils.ReadConfig(*env)
 
 	if *mode == ModeConsumer {
+		runtime.GOMAXPROCS(runtime.NumCPU())
 		client.StartConsumer(config.Host, config.WriteFilePath, config.ConnectionType, config.WriteBufferSize, config.WriterCount)
 	} else if *mode == ModeProducer {
 		reader := NewReader(config.ReadFilePath, config.ReadBufferSize)
