@@ -29,7 +29,7 @@ func NewServer(port int, reader file.Reader) Server {
 }
 
 func (s Server) Start() {
-	go s.feeder()
+	//go s.feeder()
 	go s.reader.Start()
 	s.acceptConnection(s.port)
 }
@@ -41,30 +41,23 @@ func (s Server) acceptConnection(port int) {
 	for {
 		connection, connError := server.Accept()
 		panicOnErrorWithMessage(connError, "error in accepting connection")
-		s.connectionProducer <- connection
+		go s.feeder(connection)
 	}
 }
 
-func (s Server) feeder() {
-	for {
-		select {
-		case conn := <-s.connectionProducer:
-			s.addConnectionToPool(conn)
-		case fileContent := <-s.contentProducer:
-			s.sendContent(fileContent)
-		}
-	}
-}
 
 func (s Server) addConnectionToPool(conn net.Conn) {
 	s.connections[fmt.Sprintf("%d", len(s.connections)+1)] = conn
 }
 
-func (s Server) sendContent(file file.FileContent) {
-	for _, v := range s.connections {
-		_, _ = v.Write([]byte(utils.FillUpForCommand(file.Name)))
-		_, _ = v.Write([]byte(utils.FillUpForCommand(strconv.Itoa(file.Size))))
-		_, _ = v.Write(file.Content)
+func (s Server) feeder(conn net.Conn) {
+	for {
+		select {
+		case content := <- s.contentProducer:
+			_, _ = conn.Write([]byte(utils.FillUpForCommand(content.Name)))
+			_, _ = conn.Write([]byte(utils.FillUpForCommand(strconv.Itoa(content.Size))))
+			_, _ = conn.Write(content.Content)
+		}
 	}
 }
 
