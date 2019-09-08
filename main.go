@@ -13,10 +13,10 @@ import (
 
 const ModeConsumer = "consumer"
 const ModeProducer = "producer"
-	
+
 func main() {
 	env := flag.String("env", "", "environment")
-	mode := flag.String("mode", ModeConsumer, ModeConsumer + " / " + ModeProducer)
+	mode := flag.String("mode", ModeConsumer, ModeConsumer+" / "+ModeProducer)
 	flag.Parse()
 
 	if *mode != ModeConsumer && *mode != ModeProducer {
@@ -29,9 +29,14 @@ func main() {
 
 	if *mode == ModeConsumer {
 		runtime.GOMAXPROCS(runtime.NumCPU())
-		client.StartConsumer(config.Host, config.WriteFilePath, config.ConnectionType, config.WriteBufferSize, config.WriterCount)
+		client.StartConsumer(
+			config.Host,
+			config.WriteFilePath,
+			config.ConnectionType,
+			config.WriteBufferSize,
+			config.WriterCount)
 	} else if *mode == ModeProducer {
-		reader := NewReader(config.ReadFilePath, config.ReadBufferSize)
+		reader := NewReader(config.ReadFilePath, config.ReadBufferSize, config.ReaderCount)
 		server := NewServer(config.Port, reader)
 		server.Start()
 	}

@@ -15,6 +15,7 @@ type Config struct {
 	WriterCount     int    `json:"writer_count"`
 	ReadBufferSize  int    `json:"read_buffer_size"`
 	ReadFilePath    string `json:"read_file_path"`
+	ReaderCount     int    `json:"reader_count"`
 }
 
 func ReadConfig(env string) Config {

@@ -15,17 +15,17 @@ type Reader struct {
 	counterChan chan bool
 }
 
-func NewReader(path string, readBufferSize int) Reader {
+func NewReader(path string, readBufferSize int, readerCount int) Reader {
 	if !strings.HasSuffix(path, "/") {
 		path = fmt.Sprintf("%s/", path)
 	}
 	feederChannel := make(chan FileContent, readBufferSize)
-	readerFeeder := make(chan os.FileInfo, 10)
+	readerFeeder := make(chan os.FileInfo, readerCount)
 	return Reader{
 		Feeder:       feederChannel,
 		path:         path,
 		readerFeeder: readerFeeder,
-		counterChan: make(chan bool, 10),
+		counterChan: make(chan bool, readerCount),
 	}
 }
 
