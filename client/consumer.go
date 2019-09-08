@@ -17,18 +17,9 @@ func StartConsumer(host, writeFilePath, connType string, writeBufferSize int) {
 	socket, err := connectionFactory(connType, host)
 	checkAndPanicOnError(err)
 	consumerChannel := make(chan FileContent, writeBufferSize)
-	writer := NewWriter(writeFilePath)
-	go consumeAndWrite(consumerChannel, writer)
+	writer := NewWriter(writeFilePath, consumerChannel)
+	go writer.ConsumeAndWrite()
 	socket.Start(consumerChannel)
-}
-
-func consumeAndWrite(contents chan FileContent, writer Writer) {
-	for {
-		select {
-		case content := <- contents:
-			writer.WriteToFile(content)
-		}
-	}
 }
 
 func checkAndPanicOnError(err error) {
