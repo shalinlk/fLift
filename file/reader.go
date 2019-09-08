@@ -5,11 +5,14 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"time"
 )
 
 type Reader struct {
 	Feeder chan FileContent
 	path   string
+	readerFeeder chan os.FileInfo
+	counterChan chan bool
 }
 
 func NewReader(path string, readBufferSize int) Reader {
@@ -17,18 +20,25 @@ func NewReader(path string, readBufferSize int) Reader {
 		path = fmt.Sprintf("%s/", path)
 	}
 	feederChannel := make(chan FileContent, readBufferSize)
-	return Reader{Feeder: feederChannel, path: path}
+	readerFeeder := make(chan os.FileInfo, 10)
+	return Reader{
+		Feeder:       feederChannel,
+		path:         path,
+		readerFeeder: readerFeeder,
+		counterChan: make(chan bool, 10),
+	}
 }
 
 func (r Reader) Start() {
+	for i := 0; i < 10; i++ {
+		go r.readAndFeed2()
+	}
+	go r.tracker()
 	files, err := ioutil.ReadDir(r.path)
 	panicOnError(err, "error in listing file")
-	count := 0
 	fmt.Println("Reading")
 	for _, file := range files {
-		r.readAndFeed(file)
-		count++
-		fmt.Print("\r\rNumber of files Read : ", count)
+		r.readerFeeder <- file
 	}
 }
 
@@ -36,6 +46,29 @@ func panicOnError(e error, message string) {
 	if e != nil {
 		fmt.Println(message)
 		panic(e)
+	}
+}
+
+func (r Reader)readAndFeed2()  {
+	for {
+		select {
+		case fileInfo := <- r.readerFeeder:
+			r.readAndFeed(fileInfo)
+		}
+	}
+}
+func (r Reader) tracker() {
+	count := 0
+	second := 0
+	ticker := time.NewTicker(time.Second * 1)
+	for {
+		select {
+		case <- r.counterChan :
+			count ++
+		case <-ticker.C:
+			second++
+			fmt.Println(count, "/",second)
+		}
 	}
 }
 
@@ -50,4 +83,5 @@ func (r Reader) readAndFeed(info os.FileInfo) {
 		Content: file,
 	}
 	r.Feeder <- content
+	r.counterChan <- true
 }
