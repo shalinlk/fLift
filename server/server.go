@@ -45,19 +45,25 @@ func (s Server) acceptConnection(port int) {
 	}
 }
 
-
 func (s Server) addConnectionToPool(conn net.Conn) {
 	s.connections[fmt.Sprintf("%d", len(s.connections)+1)] = conn
 }
 
 func (s Server) feeder(conn net.Conn) {
-	//var err error
+	var err error
 	for {
-		select {
-		case content := <- s.contentProducer:
-			_, _ = conn.Write([]byte(utils.FillUpForCommand(content.Name)))
-			_, _ = conn.Write([]byte(utils.FillUpForCommand(strconv.Itoa(content.Size))))
-			_, _ = conn.Write(content.Content)
+		content := <-s.contentProducer
+		_, err = conn.Write([]byte(utils.FillUpForCommand(content.Name)))
+		if err != nil {
+			return
+		}
+		_, err = conn.Write([]byte(utils.FillUpForCommand(strconv.Itoa(content.Size))))
+		if err != nil {
+			return
+		}
+		_, err = conn.Write(content.Content)
+		if err != nil {
+			return
 		}
 	}
 }
