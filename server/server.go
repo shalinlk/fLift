@@ -35,7 +35,7 @@ func (s Server) Start() {
 }
 
 func (s Server) acceptConnection(port int) {
-	server, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
+	server, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	panicOnErrorWithMessage(err, "could not start server")
 	defer server.Close()
 	for {
