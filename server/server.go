@@ -51,6 +51,7 @@ func (s Server) addConnectionToPool(conn net.Conn) {
 }
 
 func (s Server) feeder(conn net.Conn) {
+	//var err error
 	for {
 		select {
 		case content := <- s.contentProducer:

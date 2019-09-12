@@ -7,19 +7,19 @@ import (
 	. "github.com/shalinlk/fLift/file"
 )
 
-func connectionFactory(connType, host string) (Client, error) {
+func connectionFactory(connType, host string, consumerChan chan FileContent) (Client, error) {
 	if connType == "tcp" {
-		return NewTCPClient(host), nil
+		return NewTCPClient(host, consumerChan), nil
 	}
 	return nil, errors.New("connection type not defined")
 }
 func StartConsumer(host, writeFilePath, connType string, writeBufferSize int, agentCount int) {
-	socket, err := connectionFactory(connType, host)
-	checkAndPanicOnError(err)
 	consumerChannel := make(chan FileContent, writeBufferSize)
+	socket, err := connectionFactory(connType, host, consumerChannel)
+	checkAndPanicOnError(err)
 	writer := NewWriter(writeFilePath, consumerChannel, agentCount)
 	writer.StartWriters()
-	socket.Start(consumerChannel)
+	socket.Start()
 }
 
 func checkAndPanicOnError(err error) {

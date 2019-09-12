@@ -11,7 +11,7 @@ type Writer struct {
 	basePath     string
 	consumerChan chan FileContent
 	agentCount   int
-	counterChan chan bool
+	counterChan  chan bool
 }
 
 func NewWriter(basePath string, consumerChan chan FileContent, agentCount int) Writer {
@@ -22,8 +22,8 @@ func NewWriter(basePath string, consumerChan chan FileContent, agentCount int) W
 	return Writer{
 		basePath:     basePath,
 		consumerChan: consumerChan,
-		agentCount:agentCount,
-		counterChan: make(chan bool, agentCount*2),
+		agentCount:   agentCount,
+		counterChan:  make(chan bool, agentCount*2),
 	}
 }
 
@@ -35,12 +35,7 @@ func (w Writer) StartWriters() {
 }
 
 func (w Writer) startWriter() {
-	for {
-		select {
-		case content := <- w.consumerChan:
-			w.WriteToFile(content)
-		}
-	}
+	for {w.WriteToFile(<-w.consumerChan)}
 }
 
 func (w *Writer) WriteToFile(content FileContent) {
@@ -57,11 +52,11 @@ func (w Writer) tracker() {
 	ticker := NewTicker(Second * 1)
 	for {
 		select {
-		case <- w.counterChan :
-			count ++
+		case <-w.counterChan:
+			count++
 		case <-ticker.C:
 			second++
-			fmt.Println(count, "/",second)
+			fmt.Println(count, "/", second)
 		}
 	}
 }

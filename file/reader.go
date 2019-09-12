@@ -9,10 +9,10 @@ import (
 )
 
 type Reader struct {
-	Feeder chan FileContent
-	path   string
+	Feeder       chan FileContent
+	path         string
 	readerFeeder chan os.FileInfo
-	counterChan chan bool
+	counterChan  chan bool
 }
 
 func NewReader(path string, readBufferSize int, readerCount int) Reader {
@@ -25,7 +25,7 @@ func NewReader(path string, readBufferSize int, readerCount int) Reader {
 		Feeder:       feederChannel,
 		path:         path,
 		readerFeeder: readerFeeder,
-		counterChan: make(chan bool, readerCount),
+		counterChan:  make(chan bool, readerCount),
 	}
 }
 
@@ -49,25 +49,21 @@ func panicOnError(e error, message string) {
 	}
 }
 
-func (r Reader)readAndFeed2()  {
-	for {
-		select {
-		case fileInfo := <- r.readerFeeder:
-			r.readAndFeed(fileInfo)
-		}
-	}
+func (r Reader) readAndFeed2() {
+	for { r.readAndFeed(<- r.readerFeeder)}
 }
+
 func (r Reader) tracker() {
 	count := 0
 	second := 0
 	ticker := time.NewTicker(time.Second * 1)
 	for {
 		select {
-		case <- r.counterChan :
-			count ++
+		case <-r.counterChan:
+			count++
 		case <-ticker.C:
 			second++
-			fmt.Println(count, "/",second)
+			fmt.Println(count, "/", second)
 		}
 	}
 }

@@ -11,17 +11,39 @@ import (
 )
 
 type TCPClient struct {
-	clientId string
-	socket   net.Conn
+	clientId     string
+	socket       net.Conn
+	serverHost   string
+	consumerChan chan file.FileContent
 }
 
-func NewTCPClient(serverHost string) TCPClient {
-	connection, err := net.Dial("tcp", serverHost)
+func NewTCPClient(serverHost string, consumerChan chan file.FileContent) TCPClient {
+	client := TCPClient{
+		serverHost:   serverHost,
+		consumerChan: consumerChan,
+	}
+	client.dial()
+	return client
+}
+
+func (c *TCPClient) dial() {
+	fmt.Println("Connecting to ", c.serverHost)
+	socket, err := net.Dial("tcp", c.serverHost)
 	if err != nil {
-		fmt.Println("connection failed to " + serverHost)
+		fmt.Println("socket failed to " + c.serverHost)
 		panic(err)
 	}
-	return TCPClient{socket: connection}
+	c.socket = socket
+}
+
+func (c *TCPClient) redial() {
+	socket, err := net.Dial("tcp", c.serverHost)
+	if err != nil {
+		c.redial()
+	}else {
+		c.socket = socket
+		c.readAndParse()
+	}
 }
 
 func (c TCPClient) Register() {
@@ -31,12 +53,12 @@ func (c TCPClient) Register() {
 	c.clientId = strings.Trim(string(clientIdBuffer), ":")
 }
 
-func (c TCPClient) Start(consumer chan<- file.FileContent) {
+func (c TCPClient) Start() {
 	//_, _ = c.socket.Write([]byte(utils.FillUpForCommand("START")))
-	c.readAndParse(consumer)
+	c.readAndParse()
 }
 
-func (c TCPClient) readAndParse(consumer chan<- file.FileContent) {
+func (c TCPClient) readAndParse() {
 	for { // todo : there should be a way to stop the consumer
 		bufferFileName := make([]byte, utils.CommandLength)
 		bufferFileSize := make([]byte, utils.CommandLength)
@@ -56,7 +78,7 @@ func (c TCPClient) readAndParse(consumer chan<- file.FileContent) {
 
 		fileContent := file.NewFileContent(fileSize, fileName)
 		fileContent.Append(fileBuffer)
-		consumer <- fileContent
+		c.consumerChan <- fileContent
 		//todo : status has to be reported and persisted. This should be used as latest status while reconnecting
 	}
 }
@@ -64,7 +86,8 @@ func (c TCPClient) readAndParse(consumer chan<- file.FileContent) {
 func (c TCPClient) handleError(err error) {
 	if err != nil {
 		fmt.Println("errored", err)
-		//todo : ERROR HAS TO BE HANDLED BY FETCHING THE LATEST STATUS AND RECONNECTING
+		//todo : ERROR HAS TO BE HANDLED BY FETCHING THE LATEST STATUS
+		c.redial()
 	}
 }
 
