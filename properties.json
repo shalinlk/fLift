@@ -3,8 +3,9 @@
   "connection_type": "tcp",
   "write_buffer_size": 1000,
   "write_file_path": "/Users/shalinlk/Projects/BigO/target/",
-  "writer_count" : 8,
+  "writer_count" : 20,
   "port": 8090,
-  "read_buffer_size": 40000,
-  "read_file_path": "/Users/shalinlk/Projects/BigO/source/sampleData3Sept2019/"
+  "read_buffer_size": 60000,
+  "read_file_path": "/Users/shalinlk/Projects/BigO/source/sampleData3Sept2019/",
+  "reader_count": 8
 }

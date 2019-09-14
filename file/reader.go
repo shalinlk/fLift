@@ -11,8 +11,9 @@ import (
 type Reader struct {
 	Feeder       chan FileContent
 	path         string
-	readerFeeder chan os.FileInfo
+	fileMetaChan chan os.FileInfo
 	counterChan  chan bool
+	readerCount  int
 }
 
 func NewReader(path string, readBufferSize int, readerCount int) Reader {
@@ -24,21 +25,22 @@ func NewReader(path string, readBufferSize int, readerCount int) Reader {
 	return Reader{
 		Feeder:       feederChannel,
 		path:         path,
-		readerFeeder: readerFeeder,
+		fileMetaChan: readerFeeder,
 		counterChan:  make(chan bool, readerCount),
+		readerCount:  readerCount,
 	}
 }
 
 func (r Reader) Start() {
-	for i := 0; i < 10; i++ {
-		go r.readAndFeed2()
+	for i := 0; i < r.readerCount; i++ {
+		go r.readAndFeed()
 	}
 	go r.tracker()
 	files, err := ioutil.ReadDir(r.path) // os commands
 	panicOnError(err, "error in listing file")
 	fmt.Println("Reading")
 	for _, file := range files {
-		r.readerFeeder <- file
+		r.fileMetaChan <- file
 	}
 }
 
@@ -47,10 +49,6 @@ func panicOnError(e error, message string) {
 		fmt.Println(message)
 		panic(e)
 	}
-}
-
-func (r Reader) readAndFeed2() {
-	for { r.readAndFeed(<- r.readerFeeder)}
 }
 
 func (r Reader) tracker() {
@@ -68,16 +66,19 @@ func (r Reader) tracker() {
 	}
 }
 
-func (r Reader) readAndFeed(info os.FileInfo) {
-	file, err := ioutil.ReadFile(r.path + info.Name())
-	if err != nil {
-		fmt.Println("Error in reading file with name "+info.Name()+"; Error : ", err)
+func (r Reader) readAndFeed() {
+	for {
+		info := <-r.fileMetaChan
+		file, err := ioutil.ReadFile(r.path + info.Name())
+		if err != nil {
+			fmt.Println("Error in reading file with name "+info.Name()+"; Error : ", err)
+		}
+		content := FileContent{
+			Size:    len(file),
+			Name:    info.Name(),
+			Content: file,
+		}
+		r.Feeder <- content
+		r.counterChan <- true
 	}
-	content := FileContent{
-		Size:    len(file),
-		Name:    info.Name(),
-		Content: file,
-	}
-	r.Feeder <- content
-	r.counterChan <- true
 }
