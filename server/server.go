@@ -29,7 +29,6 @@ func NewServer(port int, reader file.Reader) Server {
 }
 
 func (s Server) Start() {
-	//go s.feeder()
 	go s.reader.Start()
 	s.acceptConnection(s.port)
 }
@@ -40,8 +39,11 @@ func (s Server) acceptConnection(port int) {
 	defer server.Close()
 	for {
 		connection, connError := server.Accept()
-		panicOnErrorWithMessage(connError, "error in accepting connection")
-		go s.feeder(connection)
+		if connError != nil {
+			fmt.Println("error in accepting connection", connError)
+		}else {
+			go s.feeder(connection)
+		}
 	}
 }
 

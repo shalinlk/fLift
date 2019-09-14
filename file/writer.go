@@ -35,7 +35,9 @@ func (w Writer) StartWriters() {
 }
 
 func (w Writer) startWriter() {
-	for {w.WriteToFile(<-w.consumerChan)}
+	for {
+		w.WriteToFile(<-w.consumerChan)
+	}
 }
 
 func (w *Writer) WriteToFile(content FileContent) {
@@ -48,15 +50,15 @@ func (w *Writer) WriteToFile(content FileContent) {
 
 func (w Writer) tracker() {
 	count := 0
-	second := 0
+	timeInSeconds := 0
 	ticker := NewTicker(Second * 1)
 	for {
 		select {
 		case <-w.counterChan:
 			count++
 		case <-ticker.C:
-			second++
-			fmt.Println(count, "/", second)
+			timeInSeconds++
+			go func() { fmt.Println(count, "/", timeInSeconds) }()
 		}
 	}
 }

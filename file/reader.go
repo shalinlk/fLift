@@ -53,15 +53,15 @@ func panicOnError(e error, message string) {
 
 func (r Reader) tracker() {
 	count := 0
-	second := 0
+	timeInSeconds := 0
 	ticker := time.NewTicker(time.Second * 1)
 	for {
 		select {
 		case <-r.counterChan:
 			count++
 		case <-ticker.C:
-			second++
-			fmt.Println(count, "/", second)
+			timeInSeconds++
+			go func() { fmt.Println(count, "/", timeInSeconds) }()
 		}
 	}
 }
