@@ -34,7 +34,7 @@ func (r Reader) Start() {
 		go r.readAndFeed2()
 	}
 	go r.tracker()
-	files, err := ioutil.ReadDir(r.path)
+	files, err := ioutil.ReadDir(r.path) // os commands
 	panicOnError(err, "error in listing file")
 	fmt.Println("Reading")
 	for _, file := range files {
