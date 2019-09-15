@@ -7,15 +7,17 @@ import (
 )
 
 type Config struct {
-	Host            string `json:"host"`
-	Port            int    `json:"port"`
-	ConnectionType  string `json:"connection_type"`
-	WriteBufferSize int    `json:"write_buffer_size"`
-	WriteFilePath   string `json:"write_file_path"`
-	WriterCount     int    `json:"writer_count"`
-	ReadBufferSize  int    `json:"read_buffer_size"`
-	ReadFilePath    string `json:"read_file_path"`
-	ReaderCount     int    `json:"reader_count"`
+	Host                string `json:"host"`
+	Port                int    `json:"port"`
+	MaxClients          int    `json:"max_clients"`
+	ConnectionType      string `json:"connection_type"`
+	WriteBufferSize     int    `json:"write_buffer_size"`
+	WriteFilePath       string `json:"write_file_path"`
+	WriterCount         int    `json:"writer_count"`
+	ReadBufferSize      int    `json:"read_buffer_size"`
+	ReadFilePath        string `json:"read_file_path"`
+	ReaderCount         int    `json:"reader_count"`
+	StatusFlushInterval int    `json:"status_flush_interval"`
 }
 
 func ReadConfig(env string) Config {

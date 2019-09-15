@@ -76,8 +76,7 @@ func (c TCPClient) readAndParse() {
 		_, fileErr := c.socket.Read(fileBuffer) //todo : Would have to read as small buffers and keep appending
 		c.handleError(fileErr)
 
-		fileContent := file.NewFileContent(fileSize, fileName)
-		fileContent.Append(fileBuffer)
+		fileContent := file.NewFileContent(fileSize, fileName, 0, fileName, fileBuffer)
 		c.consumerChan <- fileContent
 		//todo : status has to be reported and persisted. This should be used as latest status while reconnecting
 	}

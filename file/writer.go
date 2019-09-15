@@ -31,7 +31,7 @@ func (w Writer) StartWriters() {
 	for i := 0; i < w.agentCount; i++ {
 		go w.startWriter()
 	}
-	go w.tracker()
+	go w.timeTracker()
 }
 
 func (w Writer) startWriter() {
@@ -44,11 +44,12 @@ func (w *Writer) WriteToFile(content FileContent) {
 	err := ioutil.WriteFile(w.basePath+content.Name, content.getBytes(), 0644)
 	if err != nil {
 		fmt.Print("Error in writing file : " + content.Name)
+	}else {
+		w.counterChan <- true
 	}
-	w.counterChan <- true
 }
 
-func (w Writer) tracker() {
+func (w Writer) timeTracker() {
 	count := 0
 	timeInSeconds := 0
 	ticker := NewTicker(Second * 1)
@@ -58,7 +59,7 @@ func (w Writer) tracker() {
 			count++
 		case <-ticker.C:
 			timeInSeconds++
-			go func() { fmt.Println(count, "/", timeInSeconds) }()
+			go func() { fmt.Print("\r", count, "/", timeInSeconds) }()
 		}
 	}
 }

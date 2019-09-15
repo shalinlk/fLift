@@ -2,7 +2,7 @@ package server
 
 import (
 	"fmt"
-	"github.com/shalinlk/fLift/file"
+	. "github.com/shalinlk/fLift/file"
 	"github.com/shalinlk/fLift/utils"
 	"net"
 	"strconv"
@@ -10,26 +10,32 @@ import (
 
 type Server struct {
 	connections        map[string]net.Conn
-	contentProducer    chan file.FileContent
+	contentProducer    chan FileContent
 	connectionProducer chan net.Conn
 	port               int
-	reader             file.Reader
+	reader             Reader
+	operationMode      string
+	statusTracker      StatusTracker
 }
 
-func NewServer(port int, reader file.Reader) Server {
+func NewServer(port int, reader Reader, operationMode string, maxClients, statusFlushInterval int) Server {
 	connections := make(map[string]net.Conn)
 	connectionProducer := make(chan net.Conn)
+	statusTracker := NewStatusTracker(maxClients, statusFlushInterval, operationMode)
 	return Server{
 		connections:        connections,
 		contentProducer:    reader.Feeder,
 		connectionProducer: connectionProducer,
 		port:               port,
 		reader:             reader,
+		operationMode:      operationMode,
+		statusTracker:      statusTracker,
 	}
 }
 
 func (s Server) Start() {
-	go s.reader.Start()
+	go s.reader.Start(s.operationMode, s.statusTracker.CurrentIndex())
+	s.statusTracker.Start()
 	s.acceptConnection(s.port)
 }
 
@@ -41,7 +47,7 @@ func (s Server) acceptConnection(port int) {
 		connection, connError := server.Accept()
 		if connError != nil {
 			fmt.Println("error in accepting connection", connError)
-		}else {
+		} else {
 			go s.feeder(connection)
 		}
 	}
@@ -53,6 +59,7 @@ func (s Server) addConnectionToPool(conn net.Conn) {
 
 func (s Server) feeder(conn net.Conn) {
 	var err error
+	trackerChan := s.statusTracker.StatusTrackerChan()
 	for {
 		content := <-s.contentProducer
 		_, err = conn.Write([]byte(utils.FillUpForCommand(content.Name)))
@@ -70,6 +77,7 @@ func (s Server) feeder(conn net.Conn) {
 			fmt.Println("Writing file content to connection failed. Dropping connection")
 			return
 		}
+		trackerChan <- content.Index
 	}
 }
 

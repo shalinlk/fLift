@@ -3,25 +3,24 @@ package file
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"strings"
 	"time"
 )
 
 type Reader struct {
-	Feeder       chan FileContent
-	path         string
-	fileMetaChan chan os.FileInfo
-	counterChan  chan bool
-	readerCount  int
+	Feeder        chan FileContent
+	path          string
+	fileMetaChan  chan Meta
+	counterChan   chan bool
+	readerCount   int
 }
 
-func NewReader(path string, readBufferSize int, readerCount int) Reader {
+func NewReader(path string, readBufferSize int, readerCount int ) Reader {
 	if !strings.HasSuffix(path, "/") {
 		path = fmt.Sprintf("%s/", path)
 	}
 	feederChannel := make(chan FileContent, readBufferSize)
-	readerFeeder := make(chan os.FileInfo, readerCount)
+	readerFeeder := make(chan Meta, readerCount)
 	return Reader{
 		Feeder:       feederChannel,
 		path:         path,
@@ -31,16 +30,25 @@ func NewReader(path string, readBufferSize int, readerCount int) Reader {
 	}
 }
 
-func (r Reader) Start() {
+func (r Reader) Start(operationMode string, currentIndex int64) {
 	for i := 0; i < r.readerCount; i++ {
 		go r.readAndFeed()
 	}
-	go r.tracker()
+	go r.timeTracker()
 	files, err := ioutil.ReadDir(r.path) // os commands
 	panicOnError(err, "error in listing file")
 	fmt.Println("Reading")
+	var index int64 = 0
 	for _, file := range files {
-		r.fileMetaChan <- file
+		index++
+		if operationMode  == "restart" && index <=  currentIndex{
+			continue
+		}
+		r.fileMetaChan <- Meta{
+			FileInfo: file,
+			Index:    index,
+			Path:     file.Name(),
+		}
 	}
 }
 
@@ -51,7 +59,7 @@ func panicOnError(e error, message string) {
 	}
 }
 
-func (r Reader) tracker() {
+func (r Reader) timeTracker() {
 	count := 0
 	timeInSeconds := 0
 	ticker := time.NewTicker(time.Second * 1)
@@ -61,7 +69,7 @@ func (r Reader) tracker() {
 			count++
 		case <-ticker.C:
 			timeInSeconds++
-			go func() { fmt.Println(count, "/", timeInSeconds) }()
+			go func() { fmt.Print("\r", count, "/", timeInSeconds) }()
 		}
 	}
 }
@@ -73,11 +81,7 @@ func (r Reader) readAndFeed() {
 		if err != nil {
 			fmt.Println("Error in reading file with name "+info.Name()+"; Error : ", err)
 		}
-		content := FileContent{
-			Size:    len(file),
-			Name:    info.Name(),
-			Content: file,
-		}
+		content := NewFileContent(len(file), info.Name(), info.Index, info.Path, file)
 		r.Feeder <- content
 		r.counterChan <- true
 	}

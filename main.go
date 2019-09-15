@@ -13,17 +13,23 @@ import (
 
 const ModeConsumer = "consumer"
 const ModeProducer = "producer"
+const OperationModeStart = "start"
+const OperationModeRestart = "restart"
 
 func main() {
 	env := flag.String("env", "", "environment")
 	mode := flag.String("mode", ModeConsumer, ModeConsumer+" / "+ModeProducer)
+	operationMode := flag.String("operationMode", OperationModeRestart, OperationModeStart + " / " + OperationModeRestart)
 	flag.Parse()
 
 	if *mode != ModeConsumer && *mode != ModeProducer {
 		panic("mode should be " + ModeConsumer + " / " + ModeProducer)
 	}
 
-	fmt.Println("welcome to fLift; running in " + *mode + " mode")
+	fmt.Println("Welcome to fLift; running in " + *mode + " mode")
+	if *mode  == ModeProducer{
+		fmt.Println("Operation Mode : ", *operationMode)
+	}
 
 	config := utils.ReadConfig(*env)
 
@@ -37,7 +43,7 @@ func main() {
 			config.WriterCount)
 	} else if *mode == ModeProducer {
 		reader := NewReader(config.ReadFilePath, config.ReadBufferSize, config.ReaderCount)
-		server := NewServer(config.Port, reader)
+		server := NewServer(config.Port, reader, *operationMode, config.MaxClients, config.StatusFlushInterval)
 		server.Start()
 	}
 }
