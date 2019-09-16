@@ -1,7 +1,7 @@
 package client
 
 type Client interface {
-	Register()
+	//Register()
 	Start()
-	Disconnect()
+	//Disconnect()
 }

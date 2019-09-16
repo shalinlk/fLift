@@ -7,17 +7,20 @@ import (
 	. "github.com/shalinlk/fLift/file"
 )
 
-func connectionFactory(connType, host string, consumerChan chan FileContent) (Client, error) {
+func connectionFactory(connType, host string, consumerChan chan FileContent, concurrentConnections int) (Client, error) {
 	if connType == "tcp" {
-		return NewTCPClient(host, consumerChan), nil
+		return NewTCPClient(host, consumerChan, concurrentConnections), nil
 	}
 	return nil, errors.New("connection type not defined")
 }
-func StartConsumer(host, writeFilePath, connType string, writeBufferSize int, agentCount int) {
+func StartConsumer(host, writeFilePath, connType string, writeBufferSize int, agentCount int, concurrentConnections int) {
+	if concurrentConnections < 1{
+		concurrentConnections = 1
+	}
 	consumerChannel := make(chan FileContent, writeBufferSize)
-	socket, err := connectionFactory(connType, host, consumerChannel)
+	socket, err := connectionFactory(connType, host, consumerChannel, concurrentConnections)
 	checkAndPanicOnError(err)
-	writer := NewWriter(writeFilePath, consumerChannel, agentCount)
+	writer := NewWriter(writeFilePath, consumerChannel, agentCount) //todo : writer should have been a dependency of client
 	writer.StartWriters()
 	socket.Start()
 }

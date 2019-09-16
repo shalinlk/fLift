@@ -40,7 +40,8 @@ func main() {
 			config.WriteFilePath,
 			config.ConnectionType,
 			config.WriteBufferSize,
-			config.WriterCount)
+			config.WriterCount,
+			config.ConcurrentConnections)
 	} else if *mode == ModeProducer {
 		reader := NewReader(config.ReadFilePath, config.ReadBufferSize, config.ReaderCount)
 		server := NewServer(config.Port, reader, *operationMode, config.MaxClients, config.StatusFlushInterval)
