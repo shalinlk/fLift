@@ -8,22 +8,23 @@ import (
 )
 
 type Reader struct {
-	Feeder        chan FileContent
-	path          string
-	fileMetaChan  chan Meta
-	counterChan   chan bool
-	readerCount   int
+	Feeder       chan FileContent
+	basePath     string
+	fileMetaChan chan Meta
+	counterChan  chan bool
+	readerCount  int
 }
 
-func NewReader(path string, readBufferSize int, readerCount int ) Reader {
-	if !strings.HasSuffix(path, "/") {
-		path = fmt.Sprintf("%s/", path)
+func NewReader(path string, readBufferSize int, readerCount int) Reader {
+	if strings.HasSuffix(path, "/") {
+		strings.TrimSuffix(path, "/")
+		//basePath = fmt.Sprintf("%s/", basePath)
 	}
 	feederChannel := make(chan FileContent, readBufferSize)
 	readerFeeder := make(chan Meta, readerCount)
 	return Reader{
 		Feeder:       feederChannel,
-		path:         path,
+		basePath:     path,
 		fileMetaChan: readerFeeder,
 		counterChan:  make(chan bool, readerCount),
 		readerCount:  readerCount,
@@ -35,21 +36,28 @@ func (r Reader) Start(operationMode string, currentIndex int64) {
 		go r.readAndFeed()
 	}
 	go r.timeTracker()
-	files, err := ioutil.ReadDir(r.path) // os commands
+	r.feedFilesOfDirectory(0, operationMode, currentIndex, "/")
+}
+
+func (r Reader) feedFilesOfDirectory(index int64, operationMode string, currentIndex int64, path string) int64 {
+	files, err := ioutil.ReadDir(r.basePath + path)
 	panicOnError(err, "error in listing file")
-	fmt.Println("Reading")
-	var index int64 = 0
 	for _, file := range files {
-		index++
-		if operationMode  == "restart" && index <=  currentIndex{
-			continue
-		}
-		r.fileMetaChan <- Meta{
-			FileInfo: file,
-			Index:    index,
-			Path:     file.Name(),
+		if file.IsDir() {
+			index = r.feedFilesOfDirectory(index, operationMode, currentIndex, fmt.Sprintf("%s%s/", path, file.Name()))
+		} else {
+			index++
+			if operationMode == "restart" && index <= currentIndex {
+				continue
+			}
+			r.fileMetaChan <- Meta{
+				FileInfo: file,
+				Index:    index,
+				Path:     path,
+			}
 		}
 	}
+	return index
 }
 
 func panicOnError(e error, message string) {
@@ -77,7 +85,7 @@ func (r Reader) timeTracker() {
 func (r Reader) readAndFeed() {
 	for {
 		info := <-r.fileMetaChan
-		file, err := ioutil.ReadFile(r.path + info.Name())
+		file, err := ioutil.ReadFile(r.basePath + info.Name())
 		if err != nil {
 			fmt.Println("Error in reading file with name "+info.Name()+"; Error : ", err)
 		}
