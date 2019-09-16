@@ -85,7 +85,7 @@ func (r Reader) timeTracker() {
 func (r Reader) readAndFeed() {
 	for {
 		info := <-r.fileMetaChan
-		file, err := ioutil.ReadFile(r.basePath + info.Name())
+		file, err := ioutil.ReadFile(r.basePath + info.Path + info.Name())
 		if err != nil {
 			fmt.Println("Error in reading file with name "+info.Name()+"; Error : ", err)
 		}

@@ -62,21 +62,27 @@ func (c TCPClient) readAndParse() {
 	for { // todo : there should be a way to stop the consumer
 		bufferFileName := make([]byte, utils.CommandLength)
 		bufferFileSize := make([]byte, utils.CommandLength)
+		bufferFilePath := make([]byte, utils.CommandLength)
 
 		_, fNameErr := c.socket.Read(bufferFileName)
 		c.handleError(fNameErr)
+
 		_, fSizeError := c.socket.Read(bufferFileSize)
 		c.handleError(fSizeError)
+
+		_, fPathErr := c.socket.Read(bufferFilePath)
+		c.handleError(fPathErr)
 
 		fileName := strings.Trim(string(bufferFileName), utils.Filler)
 		fileSize, convErr := strconv.Atoi(strings.Trim(string(bufferFileSize), utils.Filler))
 		c.handleError(convErr)
+		filePath := strings.Trim(string(bufferFilePath), utils.Filler)
 
 		fileBuffer := make([]byte, fileSize)
 		_, fileErr := c.socket.Read(fileBuffer) //todo : Would have to read as small buffers and keep appending
 		c.handleError(fileErr)
 
-		fileContent := file.NewFileContent(fileSize, fileName, 0, fileName, fileBuffer)
+		fileContent := file.NewFileContent(fileSize, fileName, 0, filePath, fileBuffer)
 		c.consumerChan <- fileContent
 		//todo : status has to be reported and persisted. This should be used as latest status while reconnecting
 	}

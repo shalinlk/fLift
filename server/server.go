@@ -62,21 +62,31 @@ func (s Server) feeder(conn net.Conn) {
 	trackerChan := s.statusTracker.StatusTrackerChan()
 	for {
 		content := <-s.contentProducer
+
 		_, err = conn.Write([]byte(utils.FillUpForCommand(content.Name)))
 		if err != nil {
 			fmt.Println("Writing file name to connection failed. Dropping connection")
 			return
 		}
+
 		_, err = conn.Write([]byte(utils.FillUpForCommand(strconv.Itoa(content.Size))))
 		if err != nil {
 			fmt.Println("Writing file size to connection failed. Dropping connection")
 			return
 		}
+
+		_, err = conn.Write([]byte(utils.FillUpForCommand(content.Path)))
+		if err != nil {
+			fmt.Println("Writing file path to connection failed. Dropping connection")
+			return
+		}
+
 		_, err = conn.Write(content.Content)
 		if err != nil {
 			fmt.Println("Writing file content to connection failed. Dropping connection")
 			return
 		}
+
 		trackerChan <- content.Index
 	}
 }

@@ -66,3 +66,7 @@ Eg :
 ```max_clients``` : Maximum number of consumers expected to connect to producer. This does __not__ __limit__ the number of consumers that can be connected to producer. But is used for performance optimization. 
  
 ```status_flush_interval``` : interval at which status of producer has to be written to disk
+
+##Notes
+* starting consumer without producer being alive will panic
+* if a producer dies, a working consumer will reconnect when it comes alive
