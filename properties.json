@@ -9,5 +9,6 @@
   "read_file_path": "/Users/shalinlk/Projects/BigO/source/sampleData3Sept2019",
   "reader_count": 8,
   "max_clients": 5,
-  "status_flush_interval": 2
+  "status_flush_interval": 2,
+  "keep_status": false
 }

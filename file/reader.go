@@ -3,6 +3,8 @@ package file
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -18,7 +20,6 @@ type Reader struct {
 func NewReader(path string, readBufferSize int, readerCount int) Reader {
 	if strings.HasSuffix(path, "/") {
 		strings.TrimSuffix(path, "/")
-		//basePath = fmt.Sprintf("%s/", basePath)
 	}
 	feederChannel := make(chan FileContent, readBufferSize)
 	readerFeeder := make(chan Meta, readerCount)
@@ -36,28 +37,30 @@ func (r Reader) Start(operationMode string, currentIndex int64) {
 		go r.readAndFeed()
 	}
 	go r.timeTracker()
-	r.feedFilesOfDirectory(0, operationMode, currentIndex, "/")
+	r.feedFilesOfDirectory(operationMode, currentIndex)
 }
 
-func (r Reader) feedFilesOfDirectory(index int64, operationMode string, currentIndex int64, path string) int64 {
-	files, err := ioutil.ReadDir(r.basePath + path)
-	panicOnError(err, "error in listing file")
-	for _, file := range files {
-		if file.IsDir() {
-			index = r.feedFilesOfDirectory(index, operationMode, currentIndex, fmt.Sprintf("%s%s/", path, file.Name()))
-		} else {
+func (r Reader) feedFilesOfDirectory(operationMode string, currentIndex int64) {
+	var index int64 = 0
+	err := filepath.Walk(r.basePath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			fmt.Println("Callback for directory walk failed : "+path, err)
+		}
+		if !info.IsDir() {
 			index++
 			if operationMode == "restart" && index <= currentIndex {
-				continue
+				return nil
 			}
 			r.fileMetaChan <- Meta{
-				FileInfo: file,
+				FileInfo: info,
 				Index:    index,
-				Path:     path,
+				Path:     strings.TrimSuffix(strings.TrimPrefix(path, r.basePath), info.Name()),
+				FullPath: path,
 			}
 		}
-	}
-	return index
+		return nil
+	})
+	panicOnError(err, "error in listing file")
 }
 
 func panicOnError(e error, message string) {
@@ -85,7 +88,7 @@ func (r Reader) timeTracker() {
 func (r Reader) readAndFeed() {
 	for {
 		info := <-r.fileMetaChan
-		file, err := ioutil.ReadFile(r.basePath + info.Path + info.Name())
+		file, err := ioutil.ReadFile(info.FullPath)
 		if err != nil {
 			fmt.Println("Error in reading file with name "+info.Name()+"; Error : ", err)
 		}

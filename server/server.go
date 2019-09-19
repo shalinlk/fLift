@@ -18,10 +18,10 @@ type Server struct {
 	statusTracker      StatusTracker
 }
 
-func NewServer(port int, reader Reader, operationMode string, maxClients, statusFlushInterval int) Server {
+func NewServer(port int, reader Reader, operationMode string, maxClients, statusFlushInterval int, keepStatus bool) Server {
 	connections := make(map[string]net.Conn)
 	connectionProducer := make(chan net.Conn)
-	statusTracker := NewStatusTracker(maxClients, statusFlushInterval, operationMode)
+	statusTracker := NewStatusTracker(maxClients, statusFlushInterval, operationMode, keepStatus)
 	return Server{
 		connections:        connections,
 		contentProducer:    reader.Feeder,
@@ -63,19 +63,19 @@ func (s Server) feeder(conn net.Conn) {
 	for {
 		content := <-s.contentProducer
 
-		_, err = conn.Write([]byte(utils.FillUpForCommand(content.Name)))
+		_, err = conn.Write([]byte(utils.FillUpForCommand(content.Name, utils.NameLength)))
 		if err != nil {
 			fmt.Println("Writing file name to connection failed. Dropping connection")
 			return
 		}
 
-		_, err = conn.Write([]byte(utils.FillUpForCommand(strconv.Itoa(content.Size))))
+		_, err = conn.Write([]byte(utils.FillUpForCommand(strconv.Itoa(content.Size), utils.SizeLength)))
 		if err != nil {
 			fmt.Println("Writing file size to connection failed. Dropping connection")
 			return
 		}
 
-		_, err = conn.Write([]byte(utils.FillUpForCommand(content.Path)))
+		_, err = conn.Write([]byte(utils.FillUpForCommand(content.Path, utils.PathLength)))
 		if err != nil {
 			fmt.Println("Writing file path to connection failed. Dropping connection")
 			return

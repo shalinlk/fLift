@@ -47,7 +47,7 @@ func (c *TCPClient) redial() {
 }
 
 func (c TCPClient) Register() {
-	_, _ = c.socket.Write([]byte(utils.FillUpForCommand("REGISTER")))
+	_, _ = c.socket.Write([]byte(utils.FillUpForCommand("REGISTER", utils.SizeLength)))
 	clientIdBuffer := make([]byte, 60)
 	_, _ = c.socket.Read(clientIdBuffer)
 	c.clientId = strings.Trim(string(clientIdBuffer), ":")
@@ -60,9 +60,9 @@ func (c TCPClient) Start() {
 
 func (c TCPClient) readAndParse() {
 	for { // todo : there should be a way to stop the consumer
-		bufferFileName := make([]byte, utils.CommandLength)
-		bufferFileSize := make([]byte, utils.CommandLength)
-		bufferFilePath := make([]byte, utils.CommandLength)
+		bufferFileName := make([]byte, utils.NameLength)
+		bufferFileSize := make([]byte, utils.SizeLength)
+		bufferFilePath := make([]byte, utils.PathLength)
 
 		_, fNameErr := c.socket.Read(bufferFileName)
 		c.handleError(fNameErr)
