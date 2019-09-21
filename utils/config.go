@@ -18,7 +18,8 @@ type Config struct {
 	ReadFilePath        string `json:"read_file_path"`
 	ReaderCount         int    `json:"reader_count"`
 	StatusFlushInterval int    `json:"status_flush_interval"`
-	KeepStatus          bool	`json:"keep_status"`
+	KeepStatus          bool   `json:"keep_status"`
+	ReadBatchSize       int `json:"read_batch_size"`
 }
 
 func ReadConfig(env string) Config {

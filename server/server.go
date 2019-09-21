@@ -6,6 +6,7 @@ import (
 	"github.com/shalinlk/fLift/utils"
 	"net"
 	"strconv"
+	"time"
 )
 
 type Server struct {
@@ -48,6 +49,7 @@ func (s Server) acceptConnection(port int) {
 		if connError != nil {
 			fmt.Println("error in accepting connection", connError)
 		} else {
+			fmt.Println("Accepted connection at: ", time.Now().UnixNano() / int64(time.Millisecond))
 			go s.feeder(connection)
 		}
 	}
@@ -58,24 +60,39 @@ func (s Server) addConnectionToPool(conn net.Conn) {
 }
 
 func (s Server) feeder(conn net.Conn) {
-	var err error
 	trackerChan := s.statusTracker.StatusTrackerChan()
 	for {
 		content := <-s.contentProducer
 
-		_, err = conn.Write([]byte(utils.FillUpForCommand(content.Name, utils.NameLength)))
+		fullLengthName, err := utils.FillUpForCommand(content.Name, utils.NameLength)
+		if err != nil {
+			fmt.Println("Failed to format " + content.Name + "; Size exceeds; Skipping file :", content.Name)
+			continue
+		}
+		fullLengthSize, err := utils.FillUpForCommand(strconv.Itoa(content.Size), utils.SizeLength)
+		if err != nil {
+			fmt.Println("Failed to format " + strconv.Itoa(content.Size) + "; Size exceeds; Skipping file :", content.Name)
+			continue
+		}
+		fullLengthPath, err := utils.FillUpForCommand(content.Path, utils.PathLength)
+		if err != nil {
+			fmt.Println("Failed to format " + content.Path + "; Size exceeds; Skipping file :", content.Name)
+			continue
+		}
+
+		_, err = conn.Write([]byte(fullLengthName))
 		if err != nil {
 			fmt.Println("Writing file name to connection failed. Dropping connection")
 			return
 		}
 
-		_, err = conn.Write([]byte(utils.FillUpForCommand(strconv.Itoa(content.Size), utils.SizeLength)))
+		_, err = conn.Write([]byte(fullLengthSize))
 		if err != nil {
 			fmt.Println("Writing file size to connection failed. Dropping connection")
 			return
 		}
 
-		_, err = conn.Write([]byte(utils.FillUpForCommand(content.Path, utils.PathLength)))
+		_, err = conn.Write([]byte(fullLengthPath))
 		if err != nil {
 			fmt.Println("Writing file path to connection failed. Dropping connection")
 			return

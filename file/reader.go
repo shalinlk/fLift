@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 )
@@ -15,9 +14,11 @@ type Reader struct {
 	fileMetaChan chan Meta
 	counterChan  chan bool
 	readerCount  int
+	batchSize    int
+	stopChan     chan bool
 }
 
-func NewReader(path string, readBufferSize int, readerCount int) Reader {
+func NewReader(path string, readBufferSize int, readerCount int, batchSize int) Reader {
 	if strings.HasSuffix(path, "/") {
 		strings.TrimSuffix(path, "/")
 	}
@@ -29,6 +30,8 @@ func NewReader(path string, readBufferSize int, readerCount int) Reader {
 		fileMetaChan: readerFeeder,
 		counterChan:  make(chan bool, readerCount),
 		readerCount:  readerCount,
+		batchSize:    batchSize,
+		stopChan:     make(chan bool),
 	}
 }
 
@@ -37,40 +40,41 @@ func (r Reader) Start(operationMode string, currentIndex int64) {
 		go r.readAndFeed()
 	}
 	go r.timeTracker()
-	r.feedFilesOfDirectory(operationMode, currentIndex)
-}
-
-func (r Reader) feedFilesOfDirectory(operationMode string, currentIndex int64) {
 	var index int64 = 0
-	err := filepath.Walk(r.basePath, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			fmt.Println("Callback for directory walk failed : "+path, err)
-		}
-		if !info.IsDir() {
-			index++
-			if operationMode == "restart" && index <= currentIndex {
-				return nil
-			}
-			r.fileMetaChan <- Meta{
-				FileInfo: info,
-				Index:    index,
-				Path:     strings.TrimSuffix(strings.TrimPrefix(path, r.basePath), info.Name()),
-				FullPath: path,
-			}
-		}
-		return nil
-	})
-	panicOnError(err, "error in listing file")
+	r.feedFilesOfDirectory(operationMode, currentIndex, index, "/")
 }
 
-func panicOnError(e error, message string) {
-	if e != nil {
-		fmt.Println(message)
-		panic(e)
+func (r *Reader) feedFilesOfDirectory(operationMode string, currentIndex int64, index int64, path string) int64 {
+
+	directory, directoryError := os.Open(r.basePath + path)
+	if directoryError != nil {
+		fmt.Println("Error in opening directory ", directoryError)
+	}
+	for {
+		metaOfFiles, err := directory.Readdir(r.batchSize)
+		if err != nil {
+			fmt.Println("Truncating Reader, time : ", time.Now().UnixNano()/int64(time.Millisecond))
+			fmt.Println("Truncating meta reading because of error : ", err)
+			r.stopChan <- true
+			return index
+		}
+		for _, info := range metaOfFiles {
+			if ! info.IsDir() {
+				index++
+				if operationMode == "restart" && index <= currentIndex {
+					continue
+				}
+				r.fileMetaChan <- Meta{
+					FileInfo: info,
+					Index:    index,
+					Path:     path,
+				}
+			}
+		}
 	}
 }
 
-func (r Reader) timeTracker() {
+func (r *Reader) timeTracker() {
 	count := 0
 	timeInSeconds := 0
 	ticker := time.NewTicker(time.Second * 1)
@@ -81,14 +85,17 @@ func (r Reader) timeTracker() {
 		case <-ticker.C:
 			timeInSeconds++
 			go func() { fmt.Print("\r", count, "/", timeInSeconds) }()
+		case <-r.stopChan:
+			return
 		}
 	}
 }
 
 func (r Reader) readAndFeed() {
+
 	for {
 		info := <-r.fileMetaChan
-		file, err := ioutil.ReadFile(info.FullPath)
+		file, err := ioutil.ReadFile(r.basePath + info.Path + info.FileInfo.Name())
 		if err != nil {
 			fmt.Println("Error in reading file with name "+info.Name()+"; Error : ", err)
 		}

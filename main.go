@@ -6,6 +6,7 @@ import (
 	. "github.com/shalinlk/fLift/file"
 	. "github.com/shalinlk/fLift/server"
 	"runtime"
+	"time"
 
 	"github.com/shalinlk/fLift/client"
 	"github.com/shalinlk/fLift/utils"
@@ -30,11 +31,13 @@ func main() {
 	if *mode  == ModeProducer{
 		fmt.Println("Operation Mode : ", *operationMode)
 	}
+	fmt.Println("Starting time : ", time.Now().UnixNano() / int64(time.Millisecond))
 
 	config := utils.ReadConfig(*env)
 
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	if *mode == ModeConsumer {
-		runtime.GOMAXPROCS(runtime.NumCPU())
 		client.StartConsumer(
 			config.Host,
 			config.WriteFilePath,
@@ -42,7 +45,7 @@ func main() {
 			config.WriteBufferSize,
 			config.WriterCount)
 	} else if *mode == ModeProducer {
-		reader := NewReader(config.ReadFilePath, config.ReadBufferSize, config.ReaderCount)
+		reader := NewReader(config.ReadFilePath, config.ReadBufferSize, config.ReaderCount, config.ReadBatchSize)
 		server := NewServer(
 			config.Port,
 			reader,

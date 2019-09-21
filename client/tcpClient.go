@@ -47,7 +47,8 @@ func (c *TCPClient) redial() {
 }
 
 func (c TCPClient) Register() {
-	_, _ = c.socket.Write([]byte(utils.FillUpForCommand("REGISTER", utils.SizeLength)))
+	filledUpRegCommand, _ := utils.FillUpForCommand("REGISTER", utils.SizeLength)
+	_, _ = c.socket.Write([]byte(filledUpRegCommand))
 	clientIdBuffer := make([]byte, 60)
 	_, _ = c.socket.Read(clientIdBuffer)
 	c.clientId = strings.Trim(string(clientIdBuffer), ":")
