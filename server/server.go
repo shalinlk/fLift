@@ -49,7 +49,7 @@ func (s Server) acceptConnection(port int) {
 		if connError != nil {
 			fmt.Println("error in accepting connection", connError)
 		} else {
-			fmt.Println("Accepted connection at: ", time.Now().UnixNano() / int64(time.Millisecond))
+			fmt.Println("\nAccepted connection at: ", time.Now().UnixNano() / int64(time.Millisecond))
 			go s.feeder(connection)
 		}
 	}

@@ -11,29 +11,31 @@ import (
 )
 
 type Reader struct {
-	Feeder       chan FileContent
-	basePath     string
-	fileMetaChan chan Meta
-	counterChan  chan bool
-	readerCount  int
-	batchSize    int
-	stopChan     chan bool
+	Feeder               chan FileContent
+	basePath             string
+	fileMetaChan         chan Meta
+	counterChan          chan bool
+	readerCount          int
+	batchSize            int
+	stopChan             chan bool
+	statusReportInterval int
 }
 
-func NewReader(path string, readBufferSize int, readerCount int, batchSize int) Reader {
+func NewReader(path string, readBufferSize int, readerCount int, batchSize int, StatusReportInterval int) Reader {
 	if strings.HasSuffix(path, "/") {
 		strings.TrimSuffix(path, "/")
 	}
 	feederChannel := make(chan FileContent, readBufferSize)
 	readerFeeder := make(chan Meta, readerCount)
 	return Reader{
-		Feeder:       feederChannel,
-		basePath:     path,
-		fileMetaChan: readerFeeder,
-		counterChan:  make(chan bool, readerCount),
-		readerCount:  readerCount,
-		batchSize:    batchSize,
-		stopChan:     make(chan bool),
+		Feeder:               feederChannel,
+		basePath:             path,
+		fileMetaChan:         readerFeeder,
+		counterChan:          make(chan bool, readerCount),
+		readerCount:          readerCount,
+		batchSize:            batchSize,
+		stopChan:             make(chan bool),
+		statusReportInterval: StatusReportInterval,
 	}
 }
 
@@ -89,14 +91,17 @@ func (r *Reader) feedFilesOfDirectory(operationMode string, currentIndex int64, 
 func (r *Reader) timeTracker() {
 	count := 0
 	timeInSeconds := 0
-	ticker := time.NewTicker(time.Second * 1)
+	if r.statusReportInterval <=0 {
+		r.statusReportInterval = 1
+	}
+	ticker := time.NewTicker(time.Second * time.Duration(r.statusReportInterval))
 	for {
 		select {
 		case <-r.counterChan:
 			count++
 		case <-ticker.C:
 			timeInSeconds++
-			go func(timeSec int) { fmt.Print("\r", count, "/", timeSec) }(timeInSeconds)
+			go func(timeSec int) { fmt.Print("\r", count, "/", timeSec * r.statusReportInterval) }(timeInSeconds)
 		case <-r.stopChan:
 			ticker.Stop()
 			return

@@ -77,7 +77,7 @@ func (c *TCPClient) readAndParse() {
 		fileName := strings.Trim(string(bufferFileName), utils.Filler)
 		fileSize, convErr := strconv.Atoi(strings.Trim(string(bufferFileSize), utils.Filler))
 		if fileSize < 0 {
-			fmt.Println("EOF file read; Stopping to read from conn at : ", time.Now().UnixNano() / int64(time.Millisecond))
+			fmt.Println("\nEOF file read; Stopping to read from conn at : ", time.Now().UnixNano() / int64(time.Millisecond))
 			return
 		}
 

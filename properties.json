@@ -11,5 +11,6 @@
   "max_clients": 5,
   "status_flush_interval": 2,
   "keep_status": false,
-  "read_batch_size" : 30000
+  "read_batch_size" : 30000,
+  "status_report_interval": 3
 }

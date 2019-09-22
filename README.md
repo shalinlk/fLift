@@ -39,6 +39,9 @@ Eg :
   "status_flush_interval": 2
 }
 ```
+###common properties 
+
+```status_report_interval``` : interval in seconds for reporting the counter
 
 ###consumer properties
 
@@ -66,6 +69,10 @@ Eg :
 ```max_clients``` : Maximum number of consumers expected to connect to producer. This does __not__ __limit__ the number of consumers that can be connected to producer. But is used for performance optimization. 
  
 ```status_flush_interval``` : interval at which status of producer has to be written to disk
+
+```read_batch_size``` : size of batch for reading meta data of file
+
+```keep_status``` : bool : enable/disable keeping track of files send.
 
 ##Notes
 * starting consumer without producer being alive will panic
