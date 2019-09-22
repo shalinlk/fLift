@@ -31,7 +31,7 @@ func main() {
 	if *mode  == ModeProducer{
 		fmt.Println("Operation Mode : ", *operationMode)
 	}
-	fmt.Println("Starting time : ", time.Now().UnixNano() / int64(time.Millisecond))
+	fmt.Println(*mode + " starting time : ", time.Now().UnixNano() / int64(time.Millisecond))
 
 	config := utils.ReadConfig(*env)
 

@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 	"sync"
-	. "time"
+	"time"
 )
 
 type Writer struct {
@@ -33,18 +33,29 @@ func NewWriter(basePath string, consumerChan chan FileContent, agentCount int) W
 	}
 }
 
-func (w Writer) StartWriters() {
-	for i := 0; i < w.agentCount; i++ {
-		go func() {
-			for {
-				w.WriteToFile(<-w.consumerChan)
-			}
-		}()
-	}
-	go w.timeTracker()
+func (w *Writer) StartWriters() (chan bool) {
+	doneChan := make(chan bool)
+	go func(doneChan chan bool) {
+		var wg sync.WaitGroup
+		wg.Add(w.agentCount)
+
+		fmt.Println("Agent count : ", w.agentCount)
+		for i := 0; i < w.agentCount; i++ {
+			go func(wg *sync.WaitGroup) {
+				for content := range w.consumerChan {
+					w.writeToFile(content)
+				}
+				wg.Done()
+			}(&wg)
+		}
+		go w.timeTracker()
+		wg.Wait()
+		doneChan <- true
+	}(doneChan)
+	return doneChan
 }
 
-func (w *Writer) WriteToFile(content FileContent) {
+func (w *Writer) writeToFile(content FileContent) {
 	w.createDirectoryIfDoesNotExist(content.Path)
 	err := ioutil.WriteFile(w.basePath+content.Path+content.Name, content.getBytes(), 0644)
 	if err != nil {
@@ -57,7 +68,7 @@ func (w *Writer) WriteToFile(content FileContent) {
 func (w Writer) timeTracker() {
 	count := 0
 	timeInSeconds := 0
-	ticker := NewTicker(Second * 1)
+	ticker := time.NewTicker(time.Second * 1)
 	for {
 		select {
 		case <-w.counterChan:

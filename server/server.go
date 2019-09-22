@@ -61,9 +61,7 @@ func (s Server) addConnectionToPool(conn net.Conn) {
 
 func (s Server) feeder(conn net.Conn) {
 	trackerChan := s.statusTracker.StatusTrackerChan()
-	for {
-		content := <-s.contentProducer
-
+	for content := range s.contentProducer{
 		fullLengthName, err := utils.FillUpForCommand(content.Name, utils.NameLength)
 		if err != nil {
 			fmt.Println("Failed to format " + content.Name + "; Size exceeds; Skipping file :", content.Name)
@@ -103,9 +101,22 @@ func (s Server) feeder(conn net.Conn) {
 			fmt.Println("Writing file content to connection failed. Dropping connection")
 			return
 		}
-
 		trackerChan <- content.Index
 	}
+
+	fmt.Println("writing eof on connection at : ", time.Now().UnixNano() / int64(time.Millisecond))
+	tempFileName, err := utils.FillUpForCommand("eof.temp", utils.NameLength)
+	if err != nil {
+		fmt.Println("Failed to format eof.temp; Size exceeds; Skipping file :")
+		return
+	}
+	tempFileSize, err := utils.FillUpForCommand(strconv.Itoa(-1), utils.SizeLength)
+	if err != nil {
+		fmt.Println("Failed to format -1; Size exceeds; Skipping file eof.temp:")
+		return
+	}
+	_, err = conn.Write([]byte(tempFileName))
+	_, err = conn.Write([]byte(tempFileSize))
 }
 
 func panicOnErrorWithMessage(e error, message string) {

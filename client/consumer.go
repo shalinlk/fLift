@@ -3,6 +3,7 @@ package client
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	. "github.com/shalinlk/fLift/file"
 )
@@ -18,8 +19,10 @@ func StartConsumer(host, writeFilePath, connType string, writeBufferSize int, ag
 	socket, err := connectionFactory(connType, host, consumerChannel)
 	checkAndPanicOnError(err)
 	writer := NewWriter(writeFilePath, consumerChannel, agentCount)
-	writer.StartWriters()
+	done := writer.StartWriters()
 	socket.Start()
+	<-done
+	fmt.Println("All files written; at : ", time.Now().UnixNano() / int64(time.Millisecond))
 }
 
 func checkAndPanicOnError(err error) {
