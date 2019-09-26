@@ -2,7 +2,6 @@ package file
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"sync"
@@ -59,11 +58,16 @@ func (w *Writer) StartWriters() chan bool {
 
 func (w *Writer) writeToFile(content FileContent) {
 	w.createDirectoryIfDoesNotExist(content.Path)
-	err := ioutil.WriteFile(w.basePath+content.Path+content.Name, content.getBytes(), 0644)
+	f, err := os.OpenFile(w.basePath+content.Path+content.Name, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		fmt.Print("Error in writing file : "+content.Name, err)
 	} else {
-		w.counterChan <- true
+		_, err = f.Write(content.getBytes())
+		if err != nil {
+			fmt.Println("Error in writing content to file")
+		}else {
+			w.counterChan <- true
+		}
 	}
 }
 
