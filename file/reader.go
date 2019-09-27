@@ -82,6 +82,8 @@ func (r *Reader) feedFilesOfDirectory(operationMode string, currentIndex int64, 
 					Index:    index,
 					Path:     path,
 				}
+			}else {
+				index = r.feedFilesOfDirectory(operationMode, currentIndex, index, fmt.Sprintf("%s%s/", path, info.Name()))
 			}
 		}
 	}
