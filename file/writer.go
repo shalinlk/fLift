@@ -62,6 +62,7 @@ func (w *Writer) writeToFile(content FileContent) {
 	if err != nil {
 		fmt.Print("Error in writing file : "+content.Name, err)
 	} else {
+		defer f.Close()
 		_, err = f.Write(content.getBytes())
 		if err != nil {
 			fmt.Println("Error in writing content to file")
