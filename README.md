@@ -18,7 +18,7 @@ Valid values are :
 1. ```start``` : Producer will start from scratch
 2. ```restart``` : Producer will restart from the point where operation was terminated. Application creates a ```status.txt``` file for keeping track of progress. This will be referred for resuming the operation
 
-##Application Properties
+## Application Properties
 
 Remaining tuning parameters for the application. Follows json format. Expected to be along with executable under name ```properties.json```
 
@@ -39,11 +39,11 @@ Eg :
   "status_flush_interval": 2
 }
 ```
-###common properties 
+### common properties 
 
 ```status_report_interval``` : interval in seconds for reporting the counter
 
-###consumer properties
+### consumer properties
 
 ```host``` : host of the producer
 
@@ -56,7 +56,7 @@ Eg :
 ```writer_count``` : number of concurrent writers to be active for a connection. This much of parallel writing will happen 
 
 
-###producer properties
+### producer properties
 
 ```port``` : port at which producer operates
  
@@ -74,6 +74,6 @@ Eg :
 
 ```keep_status``` : bool : enable/disable keeping track of files send.
 
-##Notes
+## Notes
 * starting consumer without producer being alive will panic
 * if a producer dies, a working consumer will reconnect when it comes alive
